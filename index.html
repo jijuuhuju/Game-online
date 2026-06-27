@@ -92,7 +92,7 @@ h2{
 </style>
 </head>
 <body>
-<h2>👹 アホ鬼のかくれんぼ 👹</h2>
+<h2>👹 ステルスかくれんぼ 👹</h2>
 <div id="timer">待機中</div>
 <div id="status">
 👉 隠れたいたい草むら(🌳)を<br>
@@ -140,9 +140,10 @@ let mode=0;
 let time=180;
 let p={x:-1,y:-1};
 
-let b1Delay = 4; // 👹は4秒間動けない
+// 🛠️ 鬼のフリーズ時間を「1秒」に短縮しました！
+let b1Delay = 1; 
+let isSlow = false; 
 
-// 🛠️ 💀を消去し、👹だけにしました
 let b1={name:"鬼AA",x:2,y:2,emoji:"👹",el:b1El};
 
 function ani(charObj, x, y, emoji){
@@ -183,7 +184,7 @@ function clickCell(x,y){
     p.x=x; p.y=y;
     mode=1;
     statusEl.innerHTML=
-    "👹 アホの赤鬼が探し始めました！<br>アホすぎてどこ行くか分かりません！";
+    "👹 鬼が探し始めました！<br>草むら（🌳）に入ると鬼の動きが遅くなります！";
     
     ani({el:pEl}, p.x, p.y, "👨");
     ani(b1, b1.x, b1.y, b1.emoji);
@@ -192,32 +193,28 @@ function clickCell(x,y){
   }
 }
 
-// 🧠 👹をウルトラ大バカに改造したAIアルゴリズム
 function moveOni(b){
   if(b1Delay > 0){
     b1Delay--;
     return;
   }
 
+  let idx = b.y * 5 + b.x;
+  let tile = MAP_STR.charAt(idx);
+  if(tile == "1" && !isSlow){
+    isSlow = true; 
+    return;
+  }
+  isSlow = false; 
+
   let rand = Math.random();
   
-  // 🧠 35%の確率で、あえてあなた（👨）とは「真逆の方向」へ全力ダッシュ
-  if(rand < 0.35){
-    if(b.x < p.x) b.x--; // 右にいるのに左へ行く
-    else if(b.x > p.x) b.x++;
-    else if(b.y < p.y) b.y--;
+  if(rand < 0.60){
+    if(b.x < p.x) b.x++;
+    else if(b.x > p.x) b.x--;
+    else if(b.y < p.y) b.y++;
     else if(b.y > p.y) b.y++;
-  } 
-  // 🧠 35%の確率で、四隅の壁に向かって歩き壁に頭をぶつけ続ける（無駄足）
-  else if(rand < 0.70){
-    let wall = Math.random();
-    if(wall < 0.25) b.x = 0;
-    else if(wall < 0.5) b.x = 4;
-    else if(wall < 0.75) b.y = 0;
-    else b.y = 4;
-  } 
-  // 🧠 残り30%はただ単にランダムにウロウロするだけ
-  else {
+  } else {
     let r = Math.random();
     if(r<0.25)b.x++; else if(r<0.5)b.x--; else if(r<0.75)b.y++; else b.y--;
   }
@@ -237,16 +234,15 @@ function startTimer(){
       moveOni(b1);
       ani(b1, b1.x, b1.y, b1.emoji);
       
-      // 捕獲セリフもバカっぽく変更
       if(b1.x==p.x&&b1.y==p.y){
         mode=2;
         clearInterval(interval);
-        statusEl.innerHTML= "👹「あ、偶然見つけちゃった！！」<br>たまたま見つかってゲームオーバー";
+        statusEl.innerHTML= "💀 <b>見つかってしまった！</b><br>ゲームオーバー";
         ctrlEl.style.display = "block";
       }
     }else if(time==0){
       clearInterval(interval);
-      statusEl.innerHTML= "🎉 <b>アホ鬼を完全撃破！</b><br>逃げ切り大成功、あなたの勝ち！";
+      statusEl.innerHTML= "🎉 <b>3分間逃げ切った！</b><br>あなたの勝ち！";
       ctrlEl.style.display = "block";
     }
   },1000);
