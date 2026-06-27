@@ -78,21 +78,34 @@ h2{
   background:#0288d1;
   color:#fff;
   border:none;
-  padding:10px 20px;
-  font-size:14px;
+  padding:8px 14px;
+  font-size:12px;
   border-radius:20px;
   font-weight:bold;
   box-shadow:0 3px 0 #01579b;
   cursor:pointer;
+  margin:2px;
 }
 .btn:active{
   transform:translateY(3px);
   box-shadow:none;
 }
+/* 🟥 モード選択中の目印用スタイル */
+.act{
+  background:#e65100;
+  box-shadow:0 3px 0 #b71c1c;
+}
 </style>
 </head>
 <body>
 <h2>👹 ステルスかくれんぼ 👹</h2>
+<!-- 🟥 難易度設定ボタンの追加 -->
+<div id="modeSelect" style="margin:5px;">
+<button id="m1" class="btn act" onclick="setM(0.3,'m1')">🌱 イージー</button>
+<button id="m2" class="btn" onclick="setM(0.6,'m2')">⚖️ ノーマル</button>
+<button id="m3" class="btn" onclick="setM(0.9,'m3')">🔥 ハード</button>
+</div>
+
 <div id="timer">待機中</div>
 <div id="status">
 👉 隠れたいたい草むら(🌳)を<br>
@@ -110,21 +123,18 @@ display:inline-block;">
 <br>
 <div id="ctrl" style="
 display:none; margin:10px;">
-<button class="btn"
+<button class="btn" style="background:#558b2f; box-shadow:0 3px 0 #33691e;"
 onclick="location.reload()">
 🔄 もう一回遊ぶ
 </button>
 </div>
 
 <script>
-const boardEl=
-document.getElementById('board');
-const timerEl=
-document.getElementById('timer');
-const statusEl=
-document.getElementById('status');
-const ctrlEl=
-document.getElementById('ctrl');
+const boardEl=document.getElementById('board');
+const timerEl=document.getElementById('timer');
+const statusEl=document.getElementById('status');
+const ctrlEl=document.getElementById('ctrl');
+const modeSelEl=document.getElementById('modeSelect');
 
 const pEl=document.getElementById('p1');
 const b1El=document.getElementById('b1');
@@ -140,11 +150,21 @@ let mode=0;
 let time=180;
 let p={x:-1,y:-1};
 
-// 🛠️ 鬼のフリーズ時間を「1秒」に短縮しました！
-let b1Delay = 1; 
 let isSlow = false; 
+// 🟥 鬼が追尾してくる初期確率（ノーマルは0.6）
+let aiRate = 0.3; 
 
 let b1={name:"鬼AA",x:2,y:2,emoji:"👹",el:b1El};
+
+// 🟥 モードを切り替える関数
+function setM(rate, btnId){
+  if(mode !== 0) return; // プレイ中は変更不可
+  aiRate = rate;
+  document.getElementById('m1').classList.remove('act');
+  document.getElementById('m2').classList.remove('act');
+  document.getElementById('m3').classList.remove('act');
+  document.getElementById(btnId).classList.add('act');
+}
 
 function ani(charObj, x, y, emoji){
   if(x < 0 || y < 0){
@@ -183,10 +203,15 @@ function clickCell(x,y){
   if(mode==0 && tile=="1"){
     p.x=x; p.y=y;
     mode=1;
+    // プレイ開始したら設定ボタンを隠す
+    modeSelEl.style.display = "none";
     statusEl.innerHTML=
     "👹 鬼が探し始めました！<br>草むら（🌳）に入ると鬼の動きが遅くなります！";
     
     ani({el:pEl}, p.x, p.y, "👨");
+    ani(b1, b1.x, b1.y, b1.emoji);
+    
+    moveOni(b1);
     ani(b1, b1.x, b1.y, b1.emoji);
     
     startTimer();
@@ -194,11 +219,6 @@ function clickCell(x,y){
 }
 
 function moveOni(b){
-  if(b1Delay > 0){
-    b1Delay--;
-    return;
-  }
-
   let idx = b.y * 5 + b.x;
   let tile = MAP_STR.charAt(idx);
   if(tile == "1" && !isSlow){
@@ -209,11 +229,12 @@ function moveOni(b){
 
   let rand = Math.random();
   
-  if(rand < 0.60){
+  // 🟥 設定されたaiRateの確率であなたを追尾する
+  if(rand < aiRate){
     if(b.x < p.x) b.x++;
     else if(b.x > p.x) b.x--;
     else if(b.y < p.y) b.y++;
-    else if(b.y > p.y) b.y++;
+    else if(b.y > p.y) b.y--;
   } else {
     let r = Math.random();
     if(r<0.25)b.x++; else if(r<0.5)b.x--; else if(r<0.75)b.y++; else b.y--;
