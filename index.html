@@ -6,71 +6,135 @@ charset="utf-8">
 <meta
 name="viewport"
 content="width=
-device-width">
+device-width,
+initial-scale=1.0">
 <title>H</title>
 <style>
 body{
-  background:#222;
+  background:#1e1e24;
   color:#fff;
   font-family:
     sans-serif;
-  padding:5px;
+  padding:10px;
   text-align:
     center;
 }
-/* 🛠️ 単語がちぎれないように完全に直しました */
+/* 🟥 高級感のあるヘッダー */
+h2{
+  font-size:18px;
+  margin:5px;
+  color:#4fc3f7;
+  text-shadow:
+    0 2px 4px 
+    rgba(0,0,0,0.5);
+}
+#status{
+  font-size:13px;
+  color:#b0bec5;
+  margin:10px;
+  min-height:36px;
+}
+#timer{
+  color:#ff4081;
+  font-weight:bold;
+  font-size:16px;
+  letter-spacing:1px;
+}
+/* 🟥 5x5ボードを中央寄せ */
 .grid{
   display:grid;
   grid-template-columns:
-    repeat(5,45px);
-  gap:5px;
+    repeat(5,50px);
+  gap:6px;
   justify-content:
     center;
-  margin:10px 0;
+  margin:15px auto;
+  position:relative;
+  width:274px;
 }
+/* 🟥 滑らかなアニメ移動の枠 */
 .cell{
-  width:45px;
-  height:45px;
-  background:#333;
-  font-size:24px;
-  line-height:
-    45px;
-  border-radius:
-    4px;
-  border:1px 
-    solid #555;
+  width:50px;
+  height:50px;
+  background:#263238;
+  border-radius:8px;
+  border:2px solid #37474f;
+  box-shadow:
+    inset 0 2px 4px
+    rgba(0,0,0,0.3);
+  cursor:pointer;
+  position:relative;
+}
+/* 🟥 キャラクターの移動アニメ */
+.char-layer{
+  position:absolute;
+  width:150px;
+  height:40px;
+  pointer-events:none;
+  font-size:28px;
+  line-height:40px;
+  transition:
+    left 0.4s ease,
+    top 0.4s ease;
+  z-index:100;
+}
+.btn{
+  background:#0288d1;
+  color:#fff;
+  border:none;
+  padding:10px 20px;
+  font-size:14px;
+  border-radius:20px;
+  font-weight:bold;
+  box-shadow:0 3px 0 #01579b;
+  cursor:pointer;
+}
+.btn:active{
+  transform:translateY(3px);
+  box-shadow:none;
 }
 </style>
 </head>
 <body>
-<h2 style="
-font-size:15px;
-margin:5px;">
-🌳 ステルスかくれんぼ
-</h2>
+<h2>🌳 ステルスかくれんぼ 🌳</h2>
+<div id="timer">待機中</div>
 <div id="status">
-👉 隠れたい草むら(🌳)を
-タッチして選んでね！
-</div>
-<div id="timer">
+👉 隠れたいたい草むら(🌳)を<br>
+タップして選んでね！
 </div>
 
-<div class="grid"
-id="board"></div>
+<!-- 🟥 キャラクター専用レイヤー -->
+<div style="
+position:relative;
+display:inline-block;">
+<div class="grid" id="board"></div>
+<div id="p1" class="char-layer"></div>
+<div id="b1" class="char-layer"></div>
+<div id="b2" class="char-layer"></div>
+</div>
+
+<br>
+<div id="ctrl" style="
+display:none; margin:10px;">
+<button class="btn"
+onclick="location.reload()">
+🔄 もう一回遊ぶ
+</button>
+</div>
 
 <script>
 const boardEl=
-document
-.getElementById(
-'board');
+document.getElementById('board');
 const timerEl=
-document
-.getElementById(
-'timer');
+document.getElementById('timer');
 const statusEl=
-document
-.getElementById(
-'status');
+document.getElementById('status');
+const ctrlEl=
+document.getElementById('ctrl');
+
+const pEl=document.getElementById('p1');
+const b1El=document.getElementById('b1');
+const b2El=document.getElementById('b2');
 
 const MAP_STR = 
   "10101" +
@@ -83,58 +147,36 @@ let mode=0;
 let time=180;
 let p={x:-1,y:-1};
 
-let b1={
-  name:"鬼AA",
-  x:2,y:2,
-  isSmart:1
-};
-let b2={
-  name:"鬼BB",
-  x:2,y:2,
-  isSmart:0
-};
+let b1Delay = 5;
+let b2Delay = 2;
 
-function draw(){
+let b1={name:"鬼AA",x:2,y:2,isSmart:1,emoji:"👹",el:b1El};
+let b2={name:"鬼BB",x:2,y:2,isSmart:0,emoji:"💀",el:b2El};
+
+// 🟥 座標から画面のピクセル位置を計算して滑らかに動かす
+function ani(charObj, x, y, emoji){
+  if(x < 0 || y < 0){
+    charObj.el.style.display = "none";
+    return;
+  }
+  charObj.el.style.display = "block";
+  charObj.el.innerText = emoji;
+  // マスのサイズ(50px) + 隙間(6px)を計算
+  charObj.el.style.left = (x * 56 + 10) + "px";
+  charObj.el.style.top = (y * 56 + 5) + "px";
+}
+
+function drawGrid(){
   let html="";
-  for(
-    let y=0;
-    y<5;
-    y++
-  ){
-    for(
-      let x=0;
-      x<5;
-      x++
-    ){
+  for(let y=0; y<5; y++){
+    for(let x=0; x<5; x++){
       let idx = y * 5 + x;
-      let tile = 
-        MAP_STR.charAt(idx);
-      let char=
-        tile=="1"?
-        "🌳":"⬜";
-      
-      if(
-        p.x==x&&
-        p.y==y
-      ){
-        char="👨";
-      }
-      
-      if(mode==1){
-        if(
-          b1.x==x&&
-          b1.y==y
-        )char="👹";
-        if(
-          b2.x==x&&
-          b2.y==y
-        )char="💀";
-      }
+      let tile = MAP_STR.charAt(idx);
+      let char= tile=="1"?"🌳":"⬜";
       
       html+=`
         <div class="cell"
-        onclick="clickCell(
-        ${x},${y})">
+        onclick="clickCell(${x},${y})">
         ${char}
         </div>
       `;
@@ -145,83 +187,77 @@ function draw(){
 
 function clickCell(x,y){
   let idx = y * 5 + x;
-  let tile = 
-    MAP_STR.charAt(idx);
+  let tile = MAP_STR.charAt(idx);
     
-  if(
-    mode==0&&
-    tile=="1"
-  ){
-    p.x=x;
-    p.y=y;
+  if(mode==0 && tile=="1"){
+    p.x=x; p.y=y;
     mode=1;
     statusEl.innerHTML=
-    "👹 鬼が探し始めました！<br>"+
-    "見つからないで…！";
+    "👹 鬼が動き始めました！<br>ハラハラドキドキ…逃げ切れ！";
+    
+    // 🟥 初期位置にアニメ配置
+    ani({el:pEl}, p.x, p.y, "👨");
+    ani(b1, b1.x, b1.y, b1.emoji);
+    ani(b2, b2.x, b2.y, b2.emoji);
+    
     startTimer();
   }
 }
 
-function moveOni(b){
+function moveOni(b, delayKey){
+  if(delayKey === 1 && b1Delay > 0){ b1Delay--; return; }
+  if(delayKey === 2 && b2Delay > 0){ b2Delay--; return; }
+
   if(b.isSmart){
-    if(b.x<p.x)b.x++;
-    else if(b.x>p.x)b.x--;
-    else if(b.y<p.y)b.y++;
-    else if(b.y>p.y)b.y--;
+    if(Math.random() < 0.25){
+      let r=Math.random();
+      if(r<0.25)b.x++; else if(r<0.5)b.x--; else if(r<0.75)b.y++; else b.y--;
+    } else {
+      if(b.x<p.x)b.x++; else if(b.x>p.x)b.x--; else if(b.y<p.y)b.y++; else if(b.y>p.y)b.y--;
+    }
   }else{
     let r=Math.random();
-    if(r<0.25)b.x++;
-    if(r>=0.25&&r<0.5)b.x--;
-    if(r>=0.5&&r<0.75)b.y++;
-    if(r>=0.75)b.y--;
+    if(r<0.25)b.x++; else if(r<0.5)b.x--; else if(r<0.75)b.y++; else b.y--;
   }
   
-  if(b.x<0)b.x=0;
-  if(b.x>4)b.x=4;
-  if(b.y<0)b.y=0;
-  if(b.y>4)b.y=4;
+  if(b.x<0)b.x=0; if(b.x>4)b.x=4; if(b.y<0)b.y=0; if(b.y>4)b.y=4;
 }
 
 function startTimer(){
   const interval=
   setInterval(()=>{
-    if(time>0&&mode==1){
+    if(time>0 && mode==1){
       time--;
-      let m=
-        Math.floor(
-        time/60);
+      let m= Math.floor(time/60);
       let s=time%60;
-      timerEl.innerText=
-      `残り: ${m}分` +
-      `${s<10?"0":""}${s}秒`;
+      timerEl.innerText= `⏱️ 残り: ${m}分${s<10?"0":""}${s}秒`;
       
-      moveOni(b1);
-      moveOni(b2);
+      moveOni(b1, 1);
+      moveOni(b2, 2);
       
-      if(
-        (b1.x==p.x&&b1.y==p.y)||
-        (b2.x==p.x&&b2.y==p.y)
-      ){
+      // 🟥 滑らかなアニメーションで鬼を移動
+      ani(b1, b1.x, b1.y, b1.emoji);
+      ani(b2, b2.x, b2.y, b2.emoji);
+      
+      if((b1.x==p.x&&b1.y==p.y)||(b2.x==p.x&&b2.y==p.y)){
         mode=2;
-        clearInterval(
-          interval);
-        statusEl.innerHTML=
-        "💀 見つかった！！<br>"+
-        "ゲームオーバー";
+        clearInterval(interval);
+        statusEl.innerHTML= "💀 <b>見つかった！！</b><br>ゲームオーバー";
+        ctrlEl.style.display = "block"; // リトライ表示
       }
-      
-      draw();
     }else if(time==0){
-      clearInterval(
-        interval);
-      statusEl.innerHTML=
-      "🎉 3分間逃げ切った！<br>"+
-      "あなたの勝ち！";
+      clearInterval(interval);
+      statusEl.innerHTML= "🎉 <b>3分間逃げ切った！</b><br>神かくれんぼ師の勝ち！";
+      ctrlEl.style.display = "block";
     }
   },1000);
 }
 
-draw();
+// 初期非表示
+ani({el:pEl}, -1, -1, "");
+ani(b1, -1, -1, "");
+ani(b2, -1, -1, "");
+drawGrid();
 </script>
 </body>
 </html>
