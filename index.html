@@ -7,299 +7,193 @@ charset="utf-8">
 name="viewport"
 content="width=
 device-width">
-<title>A</title>
+<title>C</title>
 <style>
 body{
   background:#222;
   color:#fff;
-  margin:0;
+  font-family:
+    sans-serif;
   padding:5px;
 }
-#win{
-  width:100%;
-  height:200px;
-  overflow:hidden;
+.lane{
+  background:#333;
+  margin:15px 0;
+  padding:5px;
   position:
     relative;
-  background:#333;
+  height:35px;
+  border-bottom:
+    1px dashed #666;
 }
-#stg{
+.car{
   position:
     absolute;
-  width:3000px;
-  height:200px;
+  font-size:22px;
+  left:0;
 }
-.pl{
+.nm{
+  font-size:9px;
   position:
     absolute;
-  width:30px;
-  height:30px;
+  top:-3px;
+  color:#aaa;
+}
+.go{
   font-size:20px;
-}
-.tg{
-  position:
-    absolute;
-  top:-12px;
-  font-size:8px;
-}
-.bb{
-  position:
-    absolute;
-  top:-25px;
-  background:#fff;
-  color:#000;
-  font-size:8px;
-  display:none;
-}
-.fl{
-  position:
-    absolute;
-  bottom:0;
-  width:3000px;
-  height:20px;
-  background:green;
-}
-.tr{
-  position:
-    absolute;
-  bottom:20px;
-}
-.gl{
-  position:
-    absolute;
-  bottom:20px;
-  left:2800px;
-}
-.btn{
-  font-size:10px;
-  margin:2px;
+  padding:10px;
+  width:90%;
+  max-width:300px;
+  background:#e65100;
+  color:#fff;
+  border:none;
+  border-radius:5px;
 }
 </style>
 </head>
 <body>
+<h2 style="
+font-size:16px;">
+🏎️ オンラインカートレース
+</h2>
 <div id="info"></div>
-<div id="win">
-<div id="stg">
-<div class="fl"></div>
-<div class="tr"
-style="left:600px;">
-🔺</div>
-<div class="tr"
-style="left:1200px;">
-🔺</div>
-<div class="goal">🎁</div>
-<div id="p1"
-class="pl">👨
-<div class="tg">U</div>
-<div id="pB"
-class="bb"></div>
-</div>
-<div id="bBox"></div>
-</div>
-</div>
+<div id="track"></div>
+<br>
 <div>
-<button class="btn"
-onclick="t('hi')">
-hi</button>
-<button class="btn"
-onclick="t('gg')">
-gg</button>
-<button class="btn"
-onclick="t('out')"
-style="color:red;">
-out</button>
+<button class="go"
+onclick="go()">
+🏎️ アクセル連打！
+</button>
 </div>
+
 <script>
-const stg=
+const track=
 document
 .getElementById(
-'stg');
-const p1=
-document
-.getElementById(
-'p1');
-const pB=
-document
-.getElementById(
-'pB');
-const bBox=
-document
-.getElementById(
-'bBox');
+'track');
 const info=
 document
 .getElementById(
 'info');
-let p={
-  x:100,y:150,
-  vx:0,vy:0,
-  j:0
-};
-const n=[
-  "AA","BB",
-  "CC","DD"
+
+// あなたの進んだ距離(px)
+let myX = 0;
+
+const names=[
+  "tarou","ken",
+  "same","Gamer"
 ];
-const bL=[
-  {p:0,s:5},
-  {p:1,s:3},
-  {p:2,s:7}
-];
+
 const total=
 Math.floor(
 Math.random()*3
 )+2;
+
 info.innerText=
-total+"人マッチ";
+total+"人マッチング完了";
+
 let bots=[];
+
+// ライバルの生成
 for(
   let i=0;
   i<total-1;
   i++
 ){
-  let b=bL[
-    Math.floor(
-    Math.random()*
-    bL.length)
-  ];
-  if(
+  let isC=
     Math.random()
-    <0.1
-  ){
-    b={p:3,s:15};
-  }
-  let div=
-    document
-    .createElement(
-    'div');
-  div.className='pl';
-  div.innerText=
-    b.p==3?
-    "👑":"🤖";
-  let tg=
-    document
-    .createElement(
-    'div');
-  tg.className='tg';
-  tg.innerText=
-    b.p==3?
-    "CH":n[i%4];
-  div.appendChild(tg);
-  let bb=
-    document
-    .createElement(
-    'div');
-  bb.className='bb';
-  div.appendChild(bb);
-  bBox.appendChild(
-    div);
+    <0.1;
+  
   bots.push({
-    x:80+i*30,
-    y:150,vy:0,
-    j:0,p:b.p,
-    s:b.s,el:div,
-    bb:bb,out:0
+    name:isC?
+    "👑チーター":names[i],
+    x:0,
+    isC:isC,
+    // ボットごとの移動速度
+    spd:2+Math.random()*3
   });
 }
-function t(txt){
-  sB(pB,txt);
+
+// 画面を書き換える関数
+function draw(){
+  // ゴール幅(240px)を100%とした割合
+  let myM=
+    Math.floor(
+    (myX/240)*100);
+  if(myM>100)myM=100;
+
+  let html=`
+    <div class="lane">
+    <div class="nm">あなた</div>
+    <div class="car"
+    style="left:${myX}px;">
+    🏎️ [${myM}m]</div>
+    </div>
+  `;
+  
   bots.forEach(b=>{
-    if(b.out)return;
-    setTimeout(()=>{
-      let r="...";
-      if(txt=='hi')
-        r="hi!";
-      if(txt=='gg')
-        r="ty!";
-      if(txt=='out')
-        r="bye";
-      sB(b.bb,r);
-      if(txt=='out'){
-        b.out=1;
-        b.el.style
-        .opacity="0";
-      }
-    },500);
+    let bM=
+      Math.floor(
+      (b.x/240)*100);
+    if(bM>100)bM=100;
+    
+    html+=`
+      <div class="lane">
+      <div class="nm">
+      ${b.name}</div>
+      <div class="car"
+      style="left:${b.x}px;">
+      ${b.isC?"🛸":"🚗"} 
+      [${bM}m]</div>
+      </div>
+    `;
   });
+  
+  track.innerHTML=html;
 }
-function sB(el,txt){
-  el.innerText=txt;
-  el.style.display=
-    'block';
-  setTimeout(()=>{
-    el.style.display=
-      'none';
-  },1500);
-}
-window
-.addEventListener(
-'keydown',e=>{
-  if(e.key==
-    'ArrowRight')
-    p.vx=6;
-  if(e.key==
-    'ArrowLeft')
-    p.vx=-6;
-  if(e.key==
-    'ArrowUp'&&
-    !p.j){
-    p.vy=-12;
-    p.j=1;
+
+// アクセルボタンを押した時
+function go(){
+  if(myX<240){
+    myX += 15; // 15マス進む
   }
-});
-window
-.addEventListener(
-'keyup',e=>{
-  p.vx=0;
-});
+  draw();
+}
+
+// 🔄 リアルタイムレースループ
 function loop(){
-  p.x+=p.vx;
-  p.vy+=0.8;
-  p.y+=p.vy;
-  if(p.y>=150){
-    p.y=150;
-    p.vy=0;
-    p.j=0;
-  }
-  p1.style.left=
-    p.x+'px';
-  p1.style.top=
-    p.y+'px';
   bots.forEach(b=>{
-    if(b.out)return;
-    if(b.p==3){
-      b.x+=b.s;
-      b.y=50;
-    }else{
-      b.vy+=0.8;
-      b.y+=b.vy;
-      if(b.y>=150){
-        b.y=150;
-        b.vy=0;
-        b.j=0;
-      }
-      b.x+=b.s;
-      if(
-        b.x>550&&
-        b.x<580&&
-        !b.j
-      ){
-        b.vy=-12;
-        b.j=1;
+    if(b.x<240){
+      if(b.isC){
+        b.x+=8; // チーターはワープ
+      }else{
+        b.x+=b.spd; // 通常走行
       }
     }
-    b.el.style.left=
-      b.x+'px';
-    b.el.style.top=
-      b.y+'px';
   });
-  let c=p.x-100;
-  if(c<0)c=0;
-  stg.style.left=
-    -c+'px';
-  requestAnimationFrame(
-    loop
-  );
+  
+  draw();
+  
+  // ゴール判定
+  let over=0;
+  if(myX>=240)over=1;
+  bots.forEach(b=>{
+    if(b.x>=240)over=1;
+  });
+
+  // レース継続ならループ
+  if(!over){
+    requestAnimationFrame(
+      loop
+    );
+  }else{
+    info.innerText=
+      "🏁 レース終了！";
+  }
 }
+
+// スタート
+draw();
 loop();
 </script>
 </body>
