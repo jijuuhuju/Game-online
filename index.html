@@ -19,11 +19,10 @@ body{
   text-align:
     center;
 }
-/* 🟥 高級感のあるヘッダー */
 h2{
   font-size:18px;
   margin:5px;
-  color:#4fc3f7;
+  color:#ff7043;
   text-shadow:
     0 2px 4px 
     rgba(0,0,0,0.5);
@@ -40,7 +39,6 @@ h2{
   font-size:16px;
   letter-spacing:1px;
 }
-/* 🟥 5x5ボードを中央寄せ */
 .grid{
   display:grid;
   grid-template-columns:
@@ -52,7 +50,6 @@ h2{
   position:relative;
   width:274px;
 }
-/* 🟥 滑らかなアニメ移動の枠 */
 .cell{
   width:50px;
   height:50px;
@@ -65,7 +62,6 @@ h2{
   cursor:pointer;
   position:relative;
 }
-/* 🟥 キャラクターの移動アニメ */
 .char-layer{
   position:absolute;
   width:150px;
@@ -96,21 +92,19 @@ h2{
 </style>
 </head>
 <body>
-<h2>🌳 ステルスかくれんぼ 🌳</h2>
+<h2>👹 アホ鬼のかくれんぼ 👹</h2>
 <div id="timer">待機中</div>
 <div id="status">
 👉 隠れたいたい草むら(🌳)を<br>
 タップして選んでね！
 </div>
 
-<!-- 🟥 キャラクター専用レイヤー -->
 <div style="
 position:relative;
 display:inline-block;">
 <div class="grid" id="board"></div>
 <div id="p1" class="char-layer"></div>
 <div id="b1" class="char-layer"></div>
-<div id="b2" class="char-layer"></div>
 </div>
 
 <br>
@@ -134,7 +128,6 @@ document.getElementById('ctrl');
 
 const pEl=document.getElementById('p1');
 const b1El=document.getElementById('b1');
-const b2El=document.getElementById('b2');
 
 const MAP_STR = 
   "10101" +
@@ -147,13 +140,11 @@ let mode=0;
 let time=180;
 let p={x:-1,y:-1};
 
-let b1Delay = 5;
-let b2Delay = 2;
+let b1Delay = 4; // 👹は4秒間動けない
 
-let b1={name:"鬼AA",x:2,y:2,isSmart:1,emoji:"👹",el:b1El};
-let b2={name:"鬼BB",x:2,y:2,isSmart:0,emoji:"💀",el:b2El};
+// 🛠️ 💀を消去し、👹だけにしました
+let b1={name:"鬼AA",x:2,y:2,emoji:"👹",el:b1El};
 
-// 🟥 座標から画面のピクセル位置を計算して滑らかに動かす
 function ani(charObj, x, y, emoji){
   if(x < 0 || y < 0){
     charObj.el.style.display = "none";
@@ -161,7 +152,6 @@ function ani(charObj, x, y, emoji){
   }
   charObj.el.style.display = "block";
   charObj.el.innerText = emoji;
-  // マスのサイズ(50px) + 隙間(6px)を計算
   charObj.el.style.left = (x * 56 + 10) + "px";
   charObj.el.style.top = (y * 56 + 5) + "px";
 }
@@ -193,30 +183,42 @@ function clickCell(x,y){
     p.x=x; p.y=y;
     mode=1;
     statusEl.innerHTML=
-    "👹 鬼が動き始めました！<br>ハラハラドキドキ…逃げ切れ！";
+    "👹 アホの赤鬼が探し始めました！<br>アホすぎてどこ行くか分かりません！";
     
-    // 🟥 初期位置にアニメ配置
     ani({el:pEl}, p.x, p.y, "👨");
     ani(b1, b1.x, b1.y, b1.emoji);
-    ani(b2, b2.x, b2.y, b2.emoji);
     
     startTimer();
   }
 }
 
-function moveOni(b, delayKey){
-  if(delayKey === 1 && b1Delay > 0){ b1Delay--; return; }
-  if(delayKey === 2 && b2Delay > 0){ b2Delay--; return; }
+// 🧠 👹をウルトラ大バカに改造したAIアルゴリズム
+function moveOni(b){
+  if(b1Delay > 0){
+    b1Delay--;
+    return;
+  }
 
-  if(b.isSmart){
-    if(Math.random() < 0.25){
-      let r=Math.random();
-      if(r<0.25)b.x++; else if(r<0.5)b.x--; else if(r<0.75)b.y++; else b.y--;
-    } else {
-      if(b.x<p.x)b.x++; else if(b.x>p.x)b.x--; else if(b.y<p.y)b.y++; else if(b.y>p.y)b.y--;
-    }
-  }else{
-    let r=Math.random();
+  let rand = Math.random();
+  
+  // 🧠 35%の確率で、あえてあなた（👨）とは「真逆の方向」へ全力ダッシュ
+  if(rand < 0.35){
+    if(b.x < p.x) b.x--; // 右にいるのに左へ行く
+    else if(b.x > p.x) b.x++;
+    else if(b.y < p.y) b.y--;
+    else if(b.y > p.y) b.y++;
+  } 
+  // 🧠 35%の確率で、四隅の壁に向かって歩き壁に頭をぶつけ続ける（無駄足）
+  else if(rand < 0.70){
+    let wall = Math.random();
+    if(wall < 0.25) b.x = 0;
+    else if(wall < 0.5) b.x = 4;
+    else if(wall < 0.75) b.y = 0;
+    else b.y = 4;
+  } 
+  // 🧠 残り30%はただ単にランダムにウロウロするだけ
+  else {
+    let r = Math.random();
     if(r<0.25)b.x++; else if(r<0.5)b.x--; else if(r<0.75)b.y++; else b.y--;
   }
   
@@ -232,31 +234,26 @@ function startTimer(){
       let s=time%60;
       timerEl.innerText= `⏱️ 残り: ${m}分${s<10?"0":""}${s}秒`;
       
-      moveOni(b1, 1);
-      moveOni(b2, 2);
-      
-      // 🟥 滑らかなアニメーションで鬼を移動
+      moveOni(b1);
       ani(b1, b1.x, b1.y, b1.emoji);
-      ani(b2, b2.x, b2.y, b2.emoji);
       
-      if((b1.x==p.x&&b1.y==p.y)||(b2.x==p.x&&b2.y==p.y)){
+      // 捕獲セリフもバカっぽく変更
+      if(b1.x==p.x&&b1.y==p.y){
         mode=2;
         clearInterval(interval);
-        statusEl.innerHTML= "💀 <b>見つかった！！</b><br>ゲームオーバー";
-        ctrlEl.style.display = "block"; // リトライ表示
+        statusEl.innerHTML= "👹「あ、偶然見つけちゃった！！」<br>たまたま見つかってゲームオーバー";
+        ctrlEl.style.display = "block";
       }
     }else if(time==0){
       clearInterval(interval);
-      statusEl.innerHTML= "🎉 <b>3分間逃げ切った！</b><br>神かくれんぼ師の勝ち！";
+      statusEl.innerHTML= "🎉 <b>アホ鬼を完全撃破！</b><br>逃げ切り大成功、あなたの勝ち！";
       ctrlEl.style.display = "block";
     }
   },1000);
 }
 
-// 初期非表示
 ani({el:pEl}, -1, -1, "");
 ani(b1, -1, -1, "");
-ani(b2, -1, -1, "");
 drawGrid();
 </script>
 </body>
