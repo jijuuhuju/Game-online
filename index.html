@@ -58,7 +58,6 @@ margin:5px;">
 タッチして選んでね！
 </div>
 <div id="timer">
-<!-- 準備中の文字を消去 -->
 </div>
 
 <div class="grid"
@@ -82,16 +81,13 @@ const statusEl=
 document
 .getElementById(
 'status');
-const logEl=
-document
-.getElementById(
-'log');
 
+// 🛠️ 削れていた草むらデータを縦長に修復
 const MAP=[,
  ,
  ,
  ,
- 
+  [0,1,0,1,0]
 ];
 
 let mode=0; 
