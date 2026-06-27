@@ -40,11 +40,6 @@ body{
   border:1px 
     solid #555;
 }
-#timer{
-  color:#ff4081;
-  font-weight:
-    bold;
-}
 </style>
 </head>
 <body>
@@ -77,13 +72,14 @@ document
 .getElementById(
 'status');
 
-// 🛠️ マップの数字（1が草むら）を完全に修復しました
-const MAP=[,
- ,
- ,
- ,
-  [1,0,1,0,1]
-];
+// 🛠️ 絶対に消えない文字列方式に変更！
+// 1が草むら、0が空き地です
+const MAP_STR = 
+  "10101" +
+  "11111" +
+  "00000" +
+  "11111" +
+  "10101";
 
 let mode=0; 
 let time=180;
@@ -112,8 +108,12 @@ function draw(){
       x<5;
       x++
     ){
+      // 文字列からデータを取り出す
+      let idx = y * 5 + x;
+      let tile = 
+        MAP_STR.charAt(idx);
       let char=
-        MAP[y][x]==1?
+        tile=="1"?
         "🌳":"⬜";
       
       if(
@@ -147,9 +147,13 @@ function draw(){
 }
 
 function clickCell(x,y){
+  let idx = y * 5 + x;
+  let tile = 
+    MAP_STR.charAt(idx);
+    
   if(
     mode==0&&
-    MAP[y][x]==1
+    tile=="1"
   ){
     p.x=x;
     p.y=y;
