@@ -18,6 +18,7 @@ body{
   text-align:
     center;
 }
+/* 🟥 5マスずつの四角にする指定 */
 .grid{
   display:grid;
   grid-template-
@@ -55,6 +56,7 @@ margin:5px;">
 <div id="timer">
 </div>
 
+<!-- 🟥 四角いボード -->
 <div class="grid"
 id="board"></div>
 
@@ -72,8 +74,6 @@ document
 .getElementById(
 'status');
 
-// 🛠️ 絶対に消えない文字列方式に変更！
-// 1が草むら、0が空き地です
 const MAP_STR = 
   "10101" +
   "11111" +
@@ -108,7 +108,6 @@ function draw(){
       x<5;
       x++
     ){
-      // 文字列からデータを取り出す
       let idx = y * 5 + x;
       let tile = 
         MAP_STR.charAt(idx);
