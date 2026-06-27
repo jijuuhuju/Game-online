@@ -63,11 +63,6 @@ margin:5px;">
 <div class="grid"
 id="board"></div>
 
-<div id="log"
-style="font-size:
-11px;color:#aaa;">
-</div>
-
 <script>
 const boardEl=
 document
@@ -82,12 +77,12 @@ document
 .getElementById(
 'status');
 
-// 🛠️ 削れていた草むらデータを縦長に修復
+// 🛠️ マップの数字（1が草むら）を完全に修復しました
 const MAP=[,
  ,
  ,
  ,
-  [0,1,0,1,0]
+  [1,0,1,0,1]
 ];
 
 let mode=0; 
