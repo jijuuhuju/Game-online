@@ -7,7 +7,7 @@ charset="utf-8">
 name="viewport"
 content="width=
 device-width">
-<title>C</title>
+<title>H</title>
 <style>
 body{
   background:#222;
@@ -15,186 +15,245 @@ body{
   font-family:
     sans-serif;
   padding:5px;
+  text-align:
+    center;
 }
-.lane{
+.grid{
+  display:grid;
+  grid-template-
+    columns:
+    repeat(5,45px);
+  gap:5px;
+  justify-content:
+    center;
+  margin:10px 0;
+}
+.cell{
+  width:45px;
+  height:45px;
   background:#333;
-  margin:15px 0;
-  padding:5px;
-  position:
-    relative;
-  height:35px;
-  border-bottom:
-    1px dashed #666;
+  font-size:24px;
+  line-height:
+    45px;
+  border-radius:
+    4px;
+  border:1px 
+    solid #555;
 }
-.car{
-  position:
-    absolute;
-  font-size:22px;
-  left:0;
-}
-.nm{
-  font-size:9px;
-  position:
-    absolute;
-  top:-3px;
-  color:#aaa;
-}
-.go{
-  font-size:20px;
-  padding:10px;
-  width:90%;
-  max-width:300px;
-  background:#e65100;
-  color:#fff;
-  border:none;
-  border-radius:5px;
+#timer{
+  color:#ff4081;
+  font-weight:
+    bold;
 }
 </style>
 </head>
 <body>
 <h2 style="
-font-size:16px;">
-🏎️ オンラインカートレース
+font-size:15px;
+margin:5px;">
+🌳 ステルスかくれんぼ
 </h2>
-<div id="info"></div>
-<div id="track"></div>
-<br>
-<div>
-<button class="go"
-onclick="go()">
-🏎️ アクセル連打！
-</button>
+<div id="status">
+👉 隠れたい草むら(🌳)を
+タッチして選んでね！
+</div>
+<div id="timer">
+準備中...
+</div>
+
+<!-- 5x5マス画面 -->
+<div class="grid"
+id="board"></div>
+
+<div id="log"
+style="font-size:
+11px;color:#aaa;">
 </div>
 
 <script>
-const track=
+const boardEl=
 document
 .getElementById(
-'track');
-const info=
+'board');
+const timerEl=
 document
 .getElementById(
-'info');
+'timer');
+const statusEl=
+document
+.getElementById(
+'status');
+const logEl=
+document
+.getElementById(
+'log');
 
-// あなたの進んだ距離(px)
-let myX = 0;
-
-const names=[
-  "tarou","ken",
-  "same","Gamer"
+// 0:空地, 1:草むら
+const MAP=[,
+ ,
+ ,
+ ,
+  [1,0,1,0,1]
 ];
 
-const total=
-Math.floor(
-Math.random()*3
-)+2;
+// ゲーム状態
+// 0:隠れ先選び, 1:本番
+let mode=0; 
+let time=180;
 
-info.innerText=
-total+"人マッチング完了";
+// あなたの位置
+let p={x:-1,y:-1};
 
-let bots=[];
+// 👹 鬼ボット（最初は中央待機）
+let b1={
+  name:"勘が鋭い鬼AA",
+  x:2,y:2,
+  isSmart:1
+};
+let b2={
+  name:"鈍感な鬼BB",
+  x:2,y:2,
+  isSmart:0
+};
 
-// ライバルの生成
-for(
-  let i=0;
-  i<total-1;
-  i++
-){
-  let isC=
-    Math.random()
-    <0.1;
-  
-  bots.push({
-    name:isC?
-    "👑チーター":names[i],
-    x:0,
-    isC:isC,
-    // ボットごとの移動速度
-    spd:2+Math.random()*3
-  });
-}
-
-// 画面を書き換える関数
+// マップ描画
 function draw(){
-  // ゴール幅(240px)を100%とした割合
-  let myM=
-    Math.floor(
-    (myX/240)*100);
-  if(myM>100)myM=100;
-
-  let html=`
-    <div class="lane">
-    <div class="nm">あなた</div>
-    <div class="car"
-    style="left:${myX}px;">
-    🏎️ [${myM}m]</div>
-    </div>
-  `;
-  
-  bots.forEach(b=>{
-    let bM=
-      Math.floor(
-      (b.x/240)*100);
-    if(bM>100)bM=100;
-    
-    html+=`
-      <div class="lane">
-      <div class="nm">
-      ${b.name}</div>
-      <div class="car"
-      style="left:${b.x}px;">
-      ${b.isC?"🛸":"🚗"} 
-      [${bM}m]</div>
-      </div>
-    `;
-  });
-  
-  track.innerHTML=html;
-}
-
-// アクセルボタンを押した時
-function go(){
-  if(myX<240){
-    myX += 15; // 15マス進む
-  }
-  draw();
-}
-
-// 🔄 リアルタイムレースループ
-function loop(){
-  bots.forEach(b=>{
-    if(b.x<240){
-      if(b.isC){
-        b.x+=8; // チーターはワープ
-      }else{
-        b.x+=b.spd; // 通常走行
+  let html="";
+  for(
+    let y=0;
+    y<5;
+    y++
+  ){
+    for(
+      let x=0;
+      x<5;
+      x++
+    ){
+      let char=
+        MAP[y][x]==1?
+        "🌳":"⬜";
+      
+      // あなたがいる
+      if(
+        p.x==x&&
+        p.y==y
+      ){
+        char="👨";
       }
+      
+      // 鬼たちがいる(本番のみ表示)
+      if(mode==1){
+        if(
+          b1.x==x&&
+          b1.y==y
+        )char="👹";
+        if(
+          b2.x==x&&
+          b2.y==y
+        )char="💀";
+      }
+      
+      // タッチイベント付きのマス
+      html+=`
+        <div class="cell"
+        onclick="clickCell(
+        ${x},${y})">
+        ${char}
+        </div>
+      `;
     }
-  });
-  
-  draw();
-  
-  // ゴール判定
-  let over=0;
-  if(myX>=240)over=1;
-  bots.forEach(b=>{
-    if(b.x>=240)over=1;
-  });
+  }
+  boardEl.innerHTML=html;
+}
 
-  // レース継続ならループ
-  if(!over){
-    requestAnimationFrame(
-      loop
-    );
-  }else{
-    info.innerText=
-      "🏁 レース終了！";
+// 🌳 マスがタッチされた時
+function clickCell(x,y){
+  // 隠れる場所選び中、かつ草むらなら
+  if(
+    mode==0&&
+    MAP[y][x]==1
+  ){
+    p.x=x;
+    p.y=y;
+    // 本番フェーズへ移行
+    mode=1;
+    statusEl.innerHTML=
+    "👹 鬼が探し始めました！<br>"+
+    "見つからないで…！";
+    startTimer();
   }
 }
 
-// スタート
+// 🧠 鬼のリアルタイム移動AI
+function moveOni(b){
+  if(b.isSmart){
+    // 鋭い鬼：あなたの隠れ家へ
+    // 最短ルートで一直線に進む
+    if(b.x<p.x)b.x++;
+    else if(b.x>p.x)b.x--;
+    else if(b.y<p.y)b.y++;
+    else if(b.y>p.y)b.y--;
+  }else{
+    // 鈍感な鬼：ランダムに
+    // 草むらを調査する
+    let r=Math.random();
+    if(r<0.25)b.x++;
+    if(r>=0.25&&r<0.5)b.x--;
+    if(r>=0.5&&r<0.75)b.y++;
+    if(r>=0.75)b.y--;
+  }
+  
+  // 外に出さない
+  if(b.x<0)b.x=0;
+  if(b.x>4)b.x=4;
+  if(b.y<0)b.y=0;
+  if(b.y>4)b.y=4;
+}
+
+// ⏱️ タイマー＆ゲーム同期
+function startTimer(){
+  const interval=
+  setInterval(()=>{
+    if(time>0&&mode==1){
+      time--;
+      let m=
+        Math.floor(
+        time/60);
+      let s=time%60;
+      timerEl.innerText=
+      `残り: ${m}分` +
+      `${s<10?"0":""}${s}秒`;
+      
+      // 鬼たちが1マス動く
+      moveOni(b1);
+      moveOni(b2);
+      
+      // 捕獲判定
+      if(
+        (b1.x==p.x&&b1.y==p.y)||
+        (b2.x==p.x&&b2.y==p.y)
+      ){
+        mode=2; // 終了
+        clearInterval(
+          interval);
+        statusEl.innerHTML=
+        "💀 見つかった！！<br>"+
+        "ゲームオーバー";
+      }
+      
+      draw();
+    }else if(time==0){
+      clearInterval(
+        interval);
+      statusEl.innerHTML=
+      "🎉 3分間逃げ切った！<br>"+
+      "あなたの勝ち！";
+    }
+  },1000);
+}
+
+// 初期起動
 draw();
-loop();
 </script>
 </body>
 </html>
