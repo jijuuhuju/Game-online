@@ -62,9 +62,11 @@ h2{
   cursor:pointer;
   position:relative;
 }
+/* 🛠️ はみ出さないよう
+幅を50pxに修正しました */
 .char-layer{
   position:absolute;
-  width:150px;
+  width:50px;
   height:40px;
   pointer-events:none;
   font-size:28px;
@@ -90,7 +92,6 @@ h2{
   transform:translateY(3px);
   box-shadow:none;
 }
-/* 🟥 モード選択中の目印用スタイル */
 .act{
   background:#e65100;
   box-shadow:0 3px 0 #b71c1c;
@@ -99,11 +100,11 @@ h2{
 </head>
 <body>
 <h2>👹 ステルスかくれんぼ 👹</h2>
-<!-- 🟥 難易度設定ボタンの追加 -->
 <div id="modeSelect" style="margin:5px;">
-<button id="m1" class="btn act" onclick="setM(0.3,'m1')">🌱 イージー</button>
-<button id="m2" class="btn" onclick="setM(0.6,'m2')">⚖️ ノーマル</button>
-<button id="m3" class="btn" onclick="setM(0.9,'m3')">🔥 ハード</button>
+<!-- 🛠️ 確率をボタン文字に反映 -->
+<button id="m1" class="btn act" onclick="setM(0.2,'m1')">🌱 イージー(20%)</button>
+<button id="m2" class="btn" onclick="setM(0.45,'m2')">⚖️ ノーマル(45%)</button>
+<button id="m3" class="btn" onclick="setM(0.85,'m3')">🔥 ハード(85%)</button>
 </div>
 
 <div id="timer">待機中</div>
@@ -151,14 +152,13 @@ let time=180;
 let p={x:-1,y:-1};
 
 let isSlow = false; 
-// 🟥 鬼が追尾してくる初期確率（ノーマルは0.6）
-let aiRate = 0.3; 
+// 🛠️ 初期確率をイージー(0.2)に変更
+let aiRate = 0.2; 
 
 let b1={name:"鬼AA",x:2,y:2,emoji:"👹",el:b1El};
 
-// 🟥 モードを切り替える関数
 function setM(rate, btnId){
-  if(mode !== 0) return; // プレイ中は変更不可
+  if(mode !== 0) return; 
   aiRate = rate;
   document.getElementById('m1').classList.remove('act');
   document.getElementById('m2').classList.remove('act');
@@ -173,8 +173,9 @@ function ani(charObj, x, y, emoji){
   }
   charObj.el.style.display = "block";
   charObj.el.innerText = emoji;
-  charObj.el.style.left = (x * 56 + 10) + "px";
-  charObj.el.style.top = (y * 56 + 5) + "px";
+  // 🛠️ ぴったり重なるよう計算を調節
+  charObj.el.style.left = (x * 56) + "px";
+  charObj.el.style.top = (y * 56) + "px";
 }
 
 function drawGrid(){
@@ -203,7 +204,6 @@ function clickCell(x,y){
   if(mode==0 && tile=="1"){
     p.x=x; p.y=y;
     mode=1;
-    // プレイ開始したら設定ボタンを隠す
     modeSelEl.style.display = "none";
     statusEl.innerHTML=
     "👹 鬼が探し始めました！<br>草むら（🌳）に入ると鬼の動きが遅くなります！";
@@ -229,12 +229,11 @@ function moveOni(b){
 
   let rand = Math.random();
   
-  // 🟥 設定されたaiRateの確率であなたを追尾する
   if(rand < aiRate){
     if(b.x < p.x) b.x++;
     else if(b.x > p.x) b.x--;
     else if(b.y < p.y) b.y++;
-    else if(b.y > p.y) b.y--;
+    else if(b.y > p.y) b.y++;
   } else {
     let r = Math.random();
     if(r<0.25)b.x++; else if(r<0.5)b.x--; else if(r<0.75)b.y++; else b.y--;
