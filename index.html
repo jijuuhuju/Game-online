@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>マルチプレイ・ステルスバトル</title>
+    <style>
+        body { background: #222; color: white; text-align: center; font-family: sans-serif; margin: 0; padding: 20px; }
+        #gameWindow { width: 600px; height: 350px; overflow: hidden; position: relative; background: #333; margin: 20px auto; border: 4px solid #fff; }
+        #stage { position: absolute; width: 3000px; height: 350px; background: linear-gradient(to bottom, #111, #333); }
+        
+        .player { position: absolute; width: 50px; height: 50px; font-size: 32px; text-align: center; z-index: 10; transition: opacity 0.5s; line-height: 50px; }
+        .name-tag { position: absolute; top: -18px; left: -25px; width: 100px; font-size: 10px; color: #fff; background: rgba(0,0,0,0.6); border-radius: 3px; padding: 1px; text-align: center; white-space: nowrap; line-height: 12px; }
+        .bubble { position: absolute; top: -48px; left: -25px; width: 100px; background: white; color: black; font-size: 10px; font-weight: bold; border-radius: 5px; padding: 2px; text-align: center; border: 1px solid #000; display: none; z-index: 20; line-height: 12px; }
+        
+        .floor { position: absolute; bottom: 0; width: 3000px; height: 40px; background: #2e7d32; }
+        .trap { position: absolute; bottom: 40px; width: 30px; height: 30px; font-size: 24px; line-height: 30px; }
+        .goal { position: absolute; bottom: 40px; left: 2800px; font-size: 40px; line-height: 40px; }
+        
+        .ui-group { margin-top: 15px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; display: inline-block; }
+        .chat-btn, .skin-btn { background: #0288d1; color: white; border: none; padding: 8px 12px; font-size: 13px; margin: 3px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .chat-btn:hover { background: #03a9f4; }
+        .skin-btn { background: #558b2f; }
+        .skin-btn:hover { background: #689f38; }
+        #matchInfo { font-size: 18px; color: #ffeb3b; font-weight: bold; min-height: 27px; }
+    </style>
+</head>
+<body>
+    <h1>🏃 オンライン・プラットフォーマー 💨</h1>
+    <div id="matchInfo">検索中...</div>
+    <p>左右キーで移動 / 上キーでジャンプ</p>
+    
+    <div id="gameWindow">
+        <div id="stage">
+            <div class="floor"></div>
+            <div class="trap" style="left: 600px;">🔺</div>
+            <div class="trap" style="left: 1200px;">🔺</div>
+            <div class="trap" style="left: 1800px;">🔺</div>
+            <div class="goal">🎁</div>
+            
+            <div id="player" class="player"><span id="myAvatar">👨</span>
+                <div class="name-tag" style="background: #e91e63;">あなた</div>
+                <div id="pBubble" class="bubble"></div>
+            </div>
+            
+            <div id="botContainer"></div>
+        </div>
+    </div>
+
+    <div class="ui-group">
+        <strong>👕 マイスキン変更: </strong>
+        <button class="skin-btn" onclick="changeMySkin('👨')">👨 初期</button>
+        <button class="skin-btn" onclick="changeMySkin('💀')">💀 ガチ勢風</button>
+        <button class="skin-btn" onclick="changeMySkin('🐱')">🐱 ネコ</button>
+        <button class="skin-btn" onclick="changeMySkin('🦊')">🦊 キツネ</button>
+    </div>
+    <br>
+    <div class="ui-group">
+        <strong>💬 クイックチャット: </strong>
+        <button class="chat-btn" onclick="sendChat('こんにちは')">こんにちは</button>
+        <button class="chat-btn" onclick="sendChat('うまいね')">うまいね</button>
+        <button class="chat-btn" onclick="sendChat('惜しい')">惜しい</button>
+        <button class="chat-btn" onclick="sendChat('うわ')">うわ</button>
+        <button class="chat-btn" onclick="sendChat('ついてきて')">ついてきて</button>
+        <button class="chat-btn" onclick="sendChat('ごめん、抜けるね')" style="background: #c62828;">ごめん、抜けるね</button>
+    </div>
+
+    <script>
+        const stage = document.getElementById('stage');
+        const pEl = document.getElementById('player');
+        const myAvatar = document.getElementById('myAvatar');
+        const pBubble = document.getElementById('pBubble');
+        const botContainer = document.getElementById('botContainer');
+        const matchInfo = document.getElementById('matchInfo');
+
+        let p = { x: 100, y: 260, vx: 0, vy: 0, isJump: false };
+        const fakeNames = ["tarou_game", "xX_Kenshin_Xx", "さめちゃん", "Gamer_JPN", "mochi_mochi", "ルフィ2世", "ねこまる", "ぽんず"];
+        const skinPool = ["🏃", "🤖", "👽", "🤡", "👶", "🐱", "🦊", "🐻", "💀", "🥷"];
+
+        const botLibrary = [
+            { pattern: 0, speed: 5.5, chat: { hello: "ちわーす！", good: "あざます！てへ", soso: "あぶねー！", wow: "びびったわｗ", follow: "おk、まかせて", bye: "おつかれーい" } },
+            { pattern: 1, speed: 3.5, chat: { hello: "こんにちはー！", good: "ありがとうございます！", soso: "次はいけます！", wow: "わっ！びっくりした", follow: "はーい、いきます", bye: "お疲れ様でした！" } },
+            { pattern: 2, speed: 5.0, chat: { hello: "こんにちは", good: "それほどでもないです", soso: "ドンマイです", wow: "ラグった？", follow: "了解", bye: "おつでした" } },
+            { pattern: 3, speed: 8.5, chat: { hello: "うい", good: "知ってる", soso: "プレミ乙", wow: "今の当たるか…", follow: "先行くわ", bye: "おつ" } }
+        ];
+
+        // 🔍 チーターの名前とセリフ用データベース
+        const cheatNames = ["_GOD_cheat_", "ADMIN_999", "lllIIllIIllII", "tool_seller"];
+        const cheatChat = { hello: "FPS: 9999", good: "Discordでツール配布中", soso: "壁抜け有効化", wow: "販売サイトはプロフ参照", follow: "スピードハックON", bye: "さよなら一般人" };
+
+        const totalPlayers = Math.floor(Math.random() * 4) + 2; 
+        const botCount = totalPlayers - 1;
+
+        matchInfo.innerText = "🔍 オンラインのプレイヤーを探しています...";
+        setTimeout(() => { matchInfo.innerText = `🎮 ${totalPlayers}人マッチに接続しました。`; }, 1200);
+
+        let bots = [];
+        let usedNames = [];
+
+        for (let i = 0; i < botCount; i++) {
+            let botData = {};
+            
+            // 🧠 確率5%でチーターを割り当てる
+            if (Math.random() < 0.05) {
+                let name = cheatNames[Math.floor(Math.random() * cheatNames.length)];
+                botData = {
+                    id: `bot_${i}`, x: 80 + (i * 30), y: 120, vy: 0, isJump: false, // 宙に浮いた初期位置
+                    name: name, pattern: 4, speed: 18.0, chat: cheatChat, // 超高速
+                    el: null, bubbleEl: null, errorRate: 0, isLeaving: false, skin: "👑" // 専用の王冠スキン
+                };
+            } else {
+                // 通常ボットの生成
+                let template = botLibrary[Math.floor(Math.random() * botLibrary.length)];
+                let name = "";
+                do { name = fakeNames[Math.floor(Math.random() * fakeNames.length)]; } while (usedNames.includes(name));
+                usedNames.push(name);
+                
+                botData = {
+                    id: `bot_${i}`, x: 80 + (i * 30), y: 260, vy: 0, isJump: false,
+                    name: name, pattern: template.pattern, speed: template.speed, chat: template.chat,
+                    el: null, bubbleEl: null, errorRate: Math.random() * 15, isLeaving: false,
+                    skin: skinPool[Math.floor(Math.random() * skinPool.length)]
+                };
+            }
+
+            let bDiv = document.createElement('div');
+            bDiv.id = botData.id; bDiv.className = 'player';
+            let skinSpan = document.createElement('span'); skinSpan.innerText = botData.skin; bDiv.appendChild(skinSpan);
+            let nameTag = document.createElement('div'); nameTag.className = 'name-tag'; nameTag.innerText = botData.name; bDiv.appendChild(nameTag);
+            let bubble = document.createElement('div'); bubble.className = 'bubble'; bDiv.appendChild(bubble);
+            botContainer.appendChild(bDiv);
+            
+            botData.el = bDiv; botData.bubbleEl = bubble;
+            bots.push(botData);
+        }
+
+        function changeMySkin(emoji) { myAvatar.innerText = emoji; }
+
+        function sendChat(text) {
+            showBubble(pBubble, text);
+            bots.forEach(b => {
+                if (b.isLeaving) return;
+                if (b.pattern !== 4 && Math.random() < 0.25) return; // チーターはチャットに100%反応して荒らす
+
+                let delay = 400 + Math.random() * 1200;
+                setTimeout(() => {
+                    let reply = "";
+                    if (text === 'こんにちは') reply = b.chat.hello;
+                    if (text === 'うまいね') reply = b.chat.good;
+                    if (text === '惜しい') reply = b.chat.soso;
+                    if (text === 'うわ') reply = b.chat.wow;
+                    if (text === 'ついてきて') reply = b.chat.follow;
+                    if (text === 'ごめん、抜けるね') reply = b.chat.bye;
+
+                    showBubble(b.bubbleEl, reply);
+
+                    if (text === 'ごめん、抜けるね') {
+                        b.isLeaving = true;
+                        setTimeout(() => { b.el.style.opacity = "0"; setTimeout(() => { b.el.remove(); }, 500); }, 1500);
+                    }
+                }, delay);
+            });
+        }
+
+        function showBubble(element, text) {
+            if(!element) return;
+            element.innerText = text; element.style.display = 'block';
+            clearTimeout(element.timer);
+            element.timer = setTimeout(() => { element.style.display = 'none'; }, 2200);
+        }
+
+        window.addEventListener('keydown', e => {
+            if (e.key === 'ArrowRight') p.vx = 8;
+            if (e.key === 'ArrowLeft') p.vx = -8;
+            if (e.key === 'ArrowUp' && !p.isJump) { p.vy = -15; p.isJump = true; }
+        });
+        window.addEventListener('keyup', e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') p.vx = 0; });
+
+        function loop() {
+            p.x += p.vx; p.vy += 0.8; p.y += p.vy;
+            if (p.y >= 260) { p.y = 260; p.vy = 0; p.isJump = false; }
+            pEl.style.left = p.x + 'px'; pEl.style.top = p.y + 'px';
+
+            bots.forEach(b => {
+                if (b.isLeaving) return;
+
+                // 🧠 チーター（パターン4）は物理と重力を完全に無視
+                if (b.pattern === 4) {
+                    b.x += b.speed; // 超高速で右に移動
+                    b.y = 120;      // 常に空中の同じ高さをキープ（空中浮遊）
+                } else {
+// 通常ボットの移動演算b.vy += 0.8; b.y += b.vy;if (b.y >= 260) { b.y = 260; b.vy = 0; b.isJump = false; }let modifier = (Math.random() * 100 < b.errorRate) ? 0.5 : 1;if (b.pattern === 0) {b.x += b.speed * modifier;if ((b.x > 580 && b.x < 600 && !b.isJump) || (b.x > 1180 && b.x < 1200 && !b.isJump)) { b.vy = -14; b.isJump = true; }}else if (b.pattern === 1) {if (b.x < p.x - 40) b.x += b.speed * modifier;if ((b.x > 550 && b.x < 570 && !b.isJump) || (b.x > 1150 && b.x < 1170 && !b.isJump)) { b.vy = -13; b.isJump = true; }}else if (b.pattern === 2) {b.x += b.speed * modifier;if ((b.x > 530 && b.x < 550 && !b.isJump) || (b.x > 1130 && b.x < 1150 && !b.isJump)) { b.vy = -16; b.isJump = true; }}else if (b.pattern === 3) {b.x += b.speed * modifier;if (p.x > b.x - 100 && p.x < b.x) b.x += 3.5;if ((b.x > 555 && b.x < 565 && !b.isJump) || (b.x > 1155 && b.x < 1165 && !b.isJump)) { b.vy = -17; b.isJump = true; }}}b.el.style.left = b.x + 'px'; b.el.style.top = b.y + 'px';});let cameraX = p.x - 200;if (cameraX < 0) cameraX = 0;if (cameraX > 2400) cameraX = 2400;stage.style.left = -cameraX + 'px';requestAnimationFrame(loop);}loop();
